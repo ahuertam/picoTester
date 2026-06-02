@@ -1,68 +1,68 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Header from './components/Header.jsx'
+import FileDropzone from './components/FileDropzone.jsx'
+import ConfigPanel from './components/ConfigPanel.jsx'
+import QuestionBankEditor from './components/QuestionBankEditor.jsx'
+import ExamView from './components/ExamView.jsx'
+import ResultsView from './components/ResultsView.jsx'
+import { ExamProvider } from './context/ExamContext.jsx'
+import { useExam } from './hooks/useExam.js'
 
-// Estados de la máquina de vistas
 const VIEW = {
   UPLOAD: 'upload',
   CONFIG: 'config',
+  REVIEW: 'review',
   EXAM: 'exam',
   RESULTS: 'results',
 }
 
 export default function App() {
+  return (
+    <ExamProvider>
+      <Shell />
+    </ExamProvider>
+  )
+}
+
+function Shell() {
   const [view, setView] = useState(VIEW.UPLOAD)
+  const { startRetryExam, startExam, loadQuestions } = useExam()
+
+  const goToConfig = useCallback(() => setView(VIEW.CONFIG), [])
+  const goToReview = useCallback(() => setView(VIEW.REVIEW), [])
+  const goToExam = useCallback(() => setView(VIEW.EXAM), [])
+  const goToResults = useCallback(() => setView(VIEW.RESULTS), [])
+  const goToUpload = useCallback(() => {
+    loadQuestions([])
+    setView(VIEW.UPLOAD)
+  }, [loadQuestions])
+
+  const handleRetry = useCallback(() => {
+    const session = startRetryExam()
+    if (session) goToExam()
+  }, [startRetryExam, goToExam])
+
+  const handleStartFromReview = useCallback(() => {
+    const session = startExam('normal')
+    if (session) goToExam()
+  }, [startExam, goToExam])
 
   return (
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        {view === VIEW.UPLOAD && (
-          <Placeholder title="Subir .md" onNext={() => setView(VIEW.CONFIG)} />
-        )}
+        {view === VIEW.UPLOAD && <FileDropzone onContinue={goToConfig} />}
         {view === VIEW.CONFIG && (
-          <Placeholder title="Configurar examen" onNext={() => setView(VIEW.EXAM)} />
+          <ConfigPanel onStart={goToExam} onReview={goToReview} onChangeFile={goToUpload} />
         )}
-        {view === VIEW.EXAM && (
-          <Placeholder title="Hacer examen" onNext={() => setView(VIEW.RESULTS)} />
+        {view === VIEW.REVIEW && (
+          <QuestionBankEditor onBack={goToConfig} onStart={handleStartFromReview} />
         )}
+        {view === VIEW.EXAM && <ExamView onFinish={goToResults} onCancel={goToConfig} />}
         {view === VIEW.RESULTS && (
-          <div className="space-y-4">
-            <Placeholder title="Resultados" />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setView(VIEW.EXAM)}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-              >
-                Repasar fallos
-              </button>
-              <button
-                onClick={() => setView(VIEW.CONFIG)}
-                className="rounded-md border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
-              >
-                Nuevo examen
-              </button>
-            </div>
-          </div>
+          <ResultsView onRetry={handleRetry} onNew={goToConfig} onChangeFile={goToUpload} />
         )}
       </main>
-    </div>
-  )
-}
-
-// Placeholder temporal — se reemplaza por componentes reales en tareas posteriores.
-function Placeholder({ title, onNext }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-      <p className="mt-2 text-sm text-slate-500">(vista en construcción)</p>
-      {onNext && (
-        <button
-          onClick={onNext}
-          className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-        >
-          Siguiente
-        </button>
-      )}
     </div>
   )
 }
