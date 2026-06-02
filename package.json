@@ -30,6 +30,7 @@
     "postcss": "^8.4.47",
     "prettier": "^3.3.2",
     "prettier-plugin-tailwindcss": "^0.6.6",
+    "puppeteer": "^25.1.0",
     "tailwindcss": "^3.4.10",
     "vite": "^5.4.0",
     "vitest": "^1.6.0"

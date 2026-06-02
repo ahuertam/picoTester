@@ -70,11 +70,12 @@ export function ExamProvider({ children }) {
   }, [setQuestions, setExcluded, setLastUploadAt, setRetryQueue])
 
   const startExam = useCallback(
-    (mode = 'normal', source = null) => {
+    (mode = 'normal', source = null, configOverride = null) => {
       // En modo repaso `source` es la cola resuelta y se respeta tal cual.
       // En modo normal, filtramos las preguntas excluidas.
       const pool = source ?? questions.filter((q) => !excludedSet.has(q.id))
-      const session = generateExamSession(pool, config, null)
+      const effectiveConfig = configOverride ? { ...config, ...configOverride } : config
+      const session = generateExamSession(pool, effectiveConfig, null)
       const newSession = {
         questions: session.questions,
         mode,

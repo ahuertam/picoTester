@@ -17,7 +17,9 @@ export default function ConfigPanel({ onStart, onReview, onChangeFile }) {
     if (includedSize === 0) return
     const safeCount = Math.max(1, Math.min(includedSize, config.questionCount || includedSize))
     setConfig((c) => ({ ...c, questionCount: safeCount }))
-    startExam('normal')
+    // Pasamos safeCount explícitamente porque startExam usa el config
+    // de su closure (la versión actual del estado), no el actualizado.
+    startExam('normal', null, { questionCount: safeCount })
     onStart()
   }
 

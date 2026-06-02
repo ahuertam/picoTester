@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import Header from './components/Header.jsx'
 import FileDropzone from './components/FileDropzone.jsx'
 import ConfigPanel from './components/ConfigPanel.jsx'
@@ -26,7 +26,8 @@ export default function App() {
 
 function Shell() {
   const [view, setView] = useState(VIEW.UPLOAD)
-  const { startRetryExam, startExam, loadQuestions } = useExam()
+  const { startRetryExam, startExam, loadQuestions, questions, excluded, config } = useExam()
+  const excludedSet = useMemo(() => new Set(excluded), [excluded])
 
   const goToConfig = useCallback(() => setView(VIEW.CONFIG), [])
   const goToReview = useCallback(() => setView(VIEW.REVIEW), [])
@@ -43,9 +44,12 @@ function Shell() {
   }, [startRetryExam, goToExam])
 
   const handleStartFromReview = useCallback(() => {
-    const session = startExam('normal')
+    const active = questions.filter((q) => !excludedSet.has(q.id))
+    if (active.length === 0) return
+    const safeCount = Math.max(1, Math.min(active.length, config.questionCount || active.length))
+    const session = startExam('normal', null, { questionCount: safeCount })
     if (session) goToExam()
-  }, [startExam, goToExam])
+  }, [startExam, goToExam, questions, excludedSet, config.questionCount])
 
   return (
     <div className="min-h-screen">
