@@ -9,16 +9,14 @@ export default function ConfigPanel({ onStart, onReview, onChangeFile }) {
   }
 
   const bankSize = questions.length
-  const includedSize = bankSize - excluded.size
+  const includedSize = Math.max(0, bankSize - excluded.length)
   const count = Math.min(config.questionCount, includedSize) || 1
   const tooMany = config.questionCount > includedSize
 
   function handleStart() {
     if (includedSize === 0) return
-    setConfig((c) => ({
-      ...c,
-      questionCount: Math.min(c.questionCount, includedSize) || includedSize,
-    }))
+    const safeCount = Math.max(1, Math.min(includedSize, config.questionCount || includedSize))
+    setConfig((c) => ({ ...c, questionCount: safeCount }))
     startExam('normal')
     onStart()
   }
@@ -41,12 +39,12 @@ export default function ConfigPanel({ onStart, onReview, onChangeFile }) {
               Banco cargado:{' '}
               <span className="font-medium text-slate-700">{bankSize}</span> pregunta
               {bankSize === 1 ? '' : 's'}
-              {excluded.size > 0 && (
+              {excluded.length > 0 && (
                 <>
                   {' '}
                   ·{' '}
                   <span className="text-amber-700">
-                    {excluded.size} excluida{excluded.size === 1 ? '' : 's'}
+                    {excluded.length} excluida{excluded.length === 1 ? '' : 's'}
                   </span>
                 </>
               )}
