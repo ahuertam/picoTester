@@ -50,7 +50,54 @@ Reglas:
 
 Hay una [plantilla de ejemplo](./public/plantilla-ejemplo.md) en `public/` que puedes usar como base.
 
-> 💡 Si tienes apuntes y quieres convertirlos automáticamente al formato, usa el prompt [`IAconvertMD.md`](./IAconvertMD.md) con tu IA favorita.
+## Crear bancos de preguntas desde apuntes
+
+El repo incluye un mini-workflow para convertir apuntes (en texto, fotos o capturas) en bancos listos para subir a la app, sin salir del repositorio. La cadena tiene tres pasos y cuatro scripts de apoyo en `scripts/`:
+
+```
+[Apuntes .jpg/.png]               [Apuntes texto]                [Banco .md]
+        │                                  │                              │
+        ▼                                  ▼                              ▼
+ scripts/ocrImages.mjs              IAconvertMD.md             scripts/verifyOutputs.mjs
+ (extrae texto por OCR)         (prompt para tu LLM)           (valida el parser)
+        │                                  │                              │
+        └───► mdsIA/raw/*.txt ──────────────┘                              │
+                       │                                                    │
+                       └──────────► mdsIA/output/*-questions.md ◄───────────┘
+```
+
+`mdsIA/` está en `.gitignore` (es material de trabajo, no se publica).
+
+### Paso 1 · OCR de imágenes (opcional)
+
+Solo si tus apuntes están en fotos, capturas o scans:
+
+```bash
+node scripts/ocrImages.mjs apuntes/p1.jpg apuntes/p2.png
+# → mdsIA/raw/p1.txt, mdsIA/raw/p2.txt
+```
+
+Por defecto genera **un `.txt` por imagen** en `mdsIA/raw/`. Idiomas por defecto `spa+eng`, configurable con `-l`. Acepta `.jpg`, `.jpeg`, `.png`, `.webp`. Más opciones en `node scripts/ocrImages.mjs --help`.
+
+### Paso 2 · Convertir texto a banco con un LLM
+
+Copia el contenido de los `.txt` de `mdsIA/raw/` (o tus apuntes en texto) y pégalo junto al prompt de [`IAconvertMD.md`](./IAconvertMD.md) en tu IA favorita (Claude, GPT, Gemini, local…). El prompt es estricto: le indica al LLM el formato exacto y las reglas de validación que aplica el parser de picoTester. Sigue la plantilla de la [sección 9](./IAconvertMD.md#9-plantilla-de-inicio-referencia-rápida).
+
+Guarda la respuesta del LLM en `mdsIA/output/<tema>-questions.md` siguiendo el formato del paso anterior.
+
+### Paso 3 · Validar el banco antes de subirlo
+
+```bash
+node scripts/verifyOutputs.mjs
+```
+
+Parsea cada `.md` de `mdsIA/output/`, reporta errores fatales y warnings del parser, y resume singles/multi. **Ejecútalo siempre** antes de subir a la app: si una pregunta sale sin `[x]` o con menos de 2 opciones, la app la rechazará al cargarla.
+
+Para simular qué pasa cuando subes varios bancos a la vez (concatenación + re-indexado de IDs), usa `node scripts/verifyMultiFile.mjs`. Es el mismo código que ejecuta `FileDropzone` internamente, así que te anticipa colisiones antes de que la app lo detecte.
+
+### `reproFlow.mjs` (diagnóstico, no parte del workflow)
+
+Script de Puppeteer que automatiza el flujo end-to-end contra la versión desplegada en GitHub Pages. Útil para reproducir bugs en producción; no interviene en la creación de bancos.
 
 ## Comandos
 
@@ -109,8 +156,10 @@ picoTester/
 ├── public/
 │   └── plantilla-ejemplo.md
 ├── scripts/
-│   ├── verifyOutputs.mjs    # valida bancos de mdsIA/output
-│   └── verifyMultiFile.mjs  # simula la concatenación
+│   ├── ocrImages.mjs        # OCR de imágenes a .txt crudo (paso previo a IAconvertMD.md)
+│   ├── reproFlow.mjs        # diagnóstico del flujo con Puppeteer
+│   ├── verifyMultiFile.mjs  # simula la concatenación multi-archivo
+│   └── verifyOutputs.mjs    # valida bancos de mdsIA/output
 └── src/
     ├── main.jsx
     ├── App.jsx              # provider + state machine de vistas

@@ -217,6 +217,8 @@ Si el documento:
 
 También puedes consultar la plantilla canónica de la app en `public/plantilla-ejemplo.md`.
 
+> 💡 **Si tus apuntes están en imágenes** (fotos, capturas, scans), extráelos primero con `node scripts/ocrImages.mjs imagen1.png imagen2.jpg` (escribe `.txt` en `mdsIA/raw/`) y pégales luego este prompt.
+
 ---
 
 ## 10. Resumen ejecutivo
